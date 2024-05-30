@@ -15,7 +15,7 @@ export default function App() {
   const [totalTime, setTotalTime] = useState(0); // Track total paused time
   const [elapsedTime, setElapsedTime] = useState(0); // Track elapsed recording time
   const intervalRef = useRef(null); // Reference for the interval
-  const [sendMessage, setSendMessage] = useState(false);
+
   useEffect(() => {
     audioContext.current = new AudioContext();
   }, []);
@@ -37,30 +37,8 @@ export default function App() {
       const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
       const url = URL.createObjectURL(audioBlob);
       audioRef.current.src = url;
-
-      if (sendMessage) {
-
-        if (audioBlobs.length > 0) {
-          const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
-          const audioURL = window.URL.createObjectURL(audioBlob);
-          console.log("🚀 ~ useEffect ~ audioURL:", audioURL)
-
-          // Create a download link and click it programmatically
-          // const anchor = document.createElement("a");
-          // anchor.href = audioURL;
-          // anchor.download = "recorded_audio.webm";
-          // document.body.appendChild(anchor);
-          // anchor.click();
-          // document.body.removeChild(anchor);
-          // window.URL.revokeObjectURL(audioURL);
-        }
-        setAudioBlobs([]);
-        setElapsedTime(0);
-        setSendMessage(false);
-      }
     }
-  }, [audioBlobs,sendMessage]);
-
+  }, [audioBlobs]);
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -69,12 +47,22 @@ export default function App() {
       audioStream.current = stream;
 
       mediaRecorderInstance.addEventListener("dataavailable", (event) => {
+        // console.log(
+        //   "🚀 ~ mediaRecorderInstance.addEventListener ~ event:",
+        //   event
+        // );
         if (event.data.size > 0) {
           setAudioBlobs((prevBlobs) => [...prevBlobs, event.data]);
         }
       });
-
+      mediaRecorderInstance.addEventListener("pause", (event) => {
+        // console.log(
+        //   "🚀 ~ mediaRecorderInstance.addEventListener ~ event:",
+        //   event
+        // );
+      });
       setStartTime(Date.now());
+      mediaRecorderInstance.addEventListener("start", (event) => {});
 
       mediaRecorderInstance.start();
       setIsRecording(true);
@@ -86,11 +74,22 @@ export default function App() {
   const pauseRecording = () => {
     if (mediaRecorder && isRecording) {
       let timeInSeconds = (Date.now() - startTime) / 1000;
-
+    
       setTotalTime((prev) => prev + timeInSeconds);
       mediaRecorder.pause();
       setIsRecording(false);
       mediaRecorder.requestData();
+
+      // if (audioBlobs.length > 0) {
+      //   // Fallback: Play the entire recording if no paused audio available
+      //   const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
+      //   const url = URL.createObjectURL(audioBlob);
+      //   audioRef.current.src = url;
+      // }
+      // Create a Blob from the accumulated audioBlobs for immediate playback
+      // const recordedBlob = new Blob(audioBlobs, { type: 'audio/webm' });
+      // const url = URL.createObjectURL(recordedBlob);
+      // setRecordedAudioURL(url); // Update paused audio URL
     }
   };
 
@@ -105,16 +104,25 @@ export default function App() {
   };
 
   const stopRecording = () => {
-    console.log("is audio");
+    console.log("is audio")
     if (mediaRecorder && isRecording) {
-      
       mediaRecorder.stop();
       setIsRecording(false);
       audioContext.current.close();
       setRecordedAudioURL(null); // Clear paused audio URL when stopping recording
     }
-    if(audioBlobs.length > 0){
-      setSendMessage(true);
+  };
+
+  const playAudio = () => {
+    if (recordedAudioURL) {
+      audioRef.current.src = recordedAudioURL;
+      audioRef.current.play();
+    } else if (audioBlobs.length > 0) {
+      // Fallback: Play the entire recording if no paused audio available
+      const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
+      const url = URL.createObjectURL(audioBlob);
+      audioRef.current.src = url;
+      audioRef.current.play();
     }
   };
 
@@ -159,14 +167,16 @@ export default function App() {
             </button>
           ) : (
             ""
+            // <button onClick={resumeRecording}>Resume Recording</button>
           )}
-          <button
-            onClick={stopRecording}
-            className="p-[11px] rounded-full bg-[#2ea75a] text-[white]"
-          >
-            <IoSend />
-          </button>
+        <button onClick={stopRecording} className="p-[11px] rounded-full bg-[#2ea75a] text-[white]"><IoSend /></button>
+    
         </div>
+        {/* {audioBlobs.length > 0 && (
+          <button onClick={playAudio}>
+            Play {recordedAudioURL ? "Paused Audio" : "Recorded Audio"}
+          </button>
+        )} */}
       </div>
     </div>
   );
