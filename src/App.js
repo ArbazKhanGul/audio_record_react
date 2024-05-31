@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { FaMicrophone } from "react-icons/fa";
 import { FaRegCirclePause } from "react-icons/fa6";
 import { IoSend } from "react-icons/io5";
+import {  LiveAudioVisualizer } from 'react-audio-visualize';
 
 export default function App() {
   const [mediaRecorder, setMediaRecorder] = useState(null);
@@ -39,11 +40,10 @@ export default function App() {
       audioRef.current.src = url;
 
       if (sendMessage) {
-
         if (audioBlobs.length > 0) {
           const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
           const audioURL = window.URL.createObjectURL(audioBlob);
-          console.log("🚀 ~ useEffect ~ audioURL:", audioURL)
+          console.log("🚀 ~ useEffect ~ audioURL:", audioURL);
 
           // Create a download link and click it programmatically
           // const anchor = document.createElement("a");
@@ -59,7 +59,7 @@ export default function App() {
         setSendMessage(false);
       }
     }
-  }, [audioBlobs,sendMessage]);
+  }, [audioBlobs, sendMessage]);
 
   const startRecording = async () => {
     try {
@@ -107,13 +107,12 @@ export default function App() {
   const stopRecording = () => {
     console.log("is audio");
     if (mediaRecorder && isRecording) {
-      
       mediaRecorder.stop();
       setIsRecording(false);
       audioContext.current.close();
       setRecordedAudioURL(null); // Clear paused audio URL when stopping recording
     }
-    if(audioBlobs.length > 0){
+    if (audioBlobs.length > 0) {
       setSendMessage(true);
     }
   };
@@ -131,7 +130,29 @@ export default function App() {
           {isRecording ? (
             <div className="flex items-center">
               <h2>{formatTime(elapsedTime)}</h2>
-              <img src="/sound.gif" className="w-[120px] h-[35px]" />
+              {/* <img src="/sound.gif" className="w-[120px] h-[35px]" />
+               */}
+              <div>
+                {/* {audioBlobs && (
+                  <AudioVisualizer
+                    ref={audioContext}
+                    blob={audioBlobs}
+                    width={500}
+                    height={75}
+                    barWidth={1}
+                    gap={0}
+                    barColor={"#f76565"}
+                  />
+                )} */}
+                {mediaRecorder && (
+                  <div className="mx-[7px]">
+        <LiveAudioVisualizer
+          mediaRecorder={mediaRecorder}
+          width={200}
+          height={75}
+        /></div>
+      )}
+              </div>
             </div>
           ) : audioBlobs.length > 0 ? (
             <audio ref={audioRef} controls />
