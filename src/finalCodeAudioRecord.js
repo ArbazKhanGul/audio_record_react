@@ -2,23 +2,17 @@ import React, { useState, useRef, useEffect } from "react";
 import { FaMicrophone } from "react-icons/fa";
 import { FaRegCirclePause } from "react-icons/fa6";
 import { IoSend } from "react-icons/io5";
+import { LiveAudioVisualizer } from "react-audio-visualize";
 
 export default function App() {
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlobs, setAudioBlobs] = useState([]);
-  const [recordedAudioURL, setRecordedAudioURL] = useState(null); // Track paused audio URL
   const audioRef = useRef(null);
-  const audioContext = useRef(null);
   const audioStream = useRef(null);
-  const [startTime, setStartTime] = useState(null); // Track recording start time
-  const [totalTime, setTotalTime] = useState(0); // Track total paused time
   const [elapsedTime, setElapsedTime] = useState(0); // Track elapsed recording time
   const intervalRef = useRef(null); // Reference for the interval
   const [sendMessage, setSendMessage] = useState(false);
-  useEffect(() => {
-    audioContext.current = new AudioContext();
-  }, []);
 
   useEffect(() => {
     if (isRecording) {
@@ -39,27 +33,17 @@ export default function App() {
       audioRef.current.src = url;
 
       if (sendMessage) {
-
-        if (audioBlobs.length > 0) {
-          const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
-          const audioURL = window.URL.createObjectURL(audioBlob);
-          console.log("🚀 ~ useEffect ~ audioURL:", audioURL)
-
-          // Create a download link and click it programmatically
-          // const anchor = document.createElement("a");
-          // anchor.href = audioURL;
-          // anchor.download = "recorded_audio.webm";
-          // document.body.appendChild(anchor);
-          // anchor.click();
-          // document.body.removeChild(anchor);
-          // window.URL.revokeObjectURL(audioURL);
-        }
+        const audioFile = new File([audioBlob], "recorded_audio.webm", {
+          type: "audio/webm",
+          lastModified: Date.now(),
+        });
+        console.log("🚀 ~ useEffect ~ audioFile:", audioFile);
         setAudioBlobs([]);
         setElapsedTime(0);
         setSendMessage(false);
       }
     }
-  }, [audioBlobs,sendMessage]);
+  }, [audioBlobs, sendMessage]);
 
   const startRecording = async () => {
     try {
@@ -74,8 +58,6 @@ export default function App() {
         }
       });
 
-      setStartTime(Date.now());
-
       mediaRecorderInstance.start();
       setIsRecording(true);
     } catch (error) {
@@ -85,9 +67,6 @@ export default function App() {
 
   const pauseRecording = () => {
     if (mediaRecorder && isRecording) {
-      let timeInSeconds = (Date.now() - startTime) / 1000;
-
-      setTotalTime((prev) => prev + timeInSeconds);
       mediaRecorder.pause();
       setIsRecording(false);
       mediaRecorder.requestData();
@@ -96,26 +75,19 @@ export default function App() {
 
   const resumeRecording = () => {
     if (mediaRecorder && !isRecording) {
-      setStartTime(Date.now());
-
       mediaRecorder.resume();
       setIsRecording(true);
-      setRecordedAudioURL(null); // Clear paused audio URL when resuming recording
+      // Clear paused audio URL when resuming recording
     }
   };
 
   const stopRecording = () => {
-    console.log("is audio");
     if (mediaRecorder && isRecording) {
-      
       mediaRecorder.stop();
       setIsRecording(false);
-      audioContext.current.close();
-      setRecordedAudioURL(null); // Clear paused audio URL when stopping recording
+
     }
-    if(audioBlobs.length > 0){
-      setSendMessage(true);
-    }
+    setSendMessage(true);
   };
 
   const formatTime = (seconds) => {
@@ -131,7 +103,19 @@ export default function App() {
           {isRecording ? (
             <div className="flex items-center">
               <h2>{formatTime(elapsedTime)}</h2>
-              <img src="/sound.gif" className="w-[120px] h-[35px]" />
+              {/* <img src="/sound.gif" className="w-[120px] h-[35px]" />
+               */}
+              <div>
+                {mediaRecorder && (
+                  <div className="mx-[7px]">
+                    <LiveAudioVisualizer
+                      mediaRecorder={mediaRecorder}
+                      width={200}
+                      height={75}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           ) : audioBlobs.length > 0 ? (
             <audio ref={audioRef} controls />
