@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { FaMicrophone } from "react-icons/fa";
 import { FaRegCirclePause } from "react-icons/fa6";
@@ -34,6 +33,9 @@ export default function App() {
       audioRef.current.src = url;
 
       if (sendMessage) {
+      // Stop all audio tracks to remove the microphone icon from the tab
+      audioStream.current.getTracks().forEach((track) => track.stop());
+
         const audioFile = new File([audioBlob], "recorded_audio.webm", {
           type: "audio/webm",
           lastModified: Date.now(),
